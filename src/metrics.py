@@ -27,6 +27,37 @@ controller_vpd = Gauge(
     ["controller_id", "controller_name"],
 )
 
+controller_temperature_trend = Gauge(
+    "acinfinity_controller_temperature_trend",
+    "Temperature trend (0=stable, 1=rising, 2=falling)",
+    ["controller_id", "controller_name"],
+)
+
+controller_humidity_trend = Gauge(
+    "acinfinity_controller_humidity_trend",
+    "Humidity trend (0=stable, 1=rising, 2=falling)",
+    ["controller_id", "controller_name"],
+)
+
+controller_mode = Gauge(
+    "acinfinity_controller_mode",
+    "Controller current mode (1=off, 2=on, 3=auto, 4=timer, 6=cycle, 7=schedule, 8=vpdTemp, 9=vpdHumi)",
+    ["controller_id", "controller_name"],
+)
+
+controller_last_seen = Gauge(
+    "acinfinity_controller_last_seen_timestamp",
+    "Unix timestamp when controller was last seen",
+    ["controller_id", "controller_name"],
+)
+
+# Controller info metric with version labels
+controller_version_info = Gauge(
+    "acinfinity_controller_version_info",
+    "Controller version information (always 1, use labels for info)",
+    ["controller_id", "controller_name", "firmware_version", "hardware_version", "wifi_name"],
+)
+
 # Device/port metrics
 device_info = Gauge(
     "acinfinity_device_info",
@@ -49,6 +80,30 @@ device_online = Gauge(
 device_state = Gauge(
     "acinfinity_device_state",
     "Device state",
+    ["controller_id", "port", "device_name"],
+)
+
+device_mode = Gauge(
+    "acinfinity_device_mode",
+    "Device current mode (1=off, 2=on, 3=auto, 4=timer, 6=cycle, 7=schedule, 8=vpdTemp, 9=vpdHumi)",
+    ["controller_id", "port", "device_name"],
+)
+
+device_connected = Gauge(
+    "acinfinity_device_connected",
+    "Whether device is physically connected (1=connected, 0=not connected)",
+    ["controller_id", "port", "device_name"],
+)
+
+device_overcurrent = Gauge(
+    "acinfinity_device_overcurrent",
+    "Overcurrent status (0=normal, 1=overcurrent detected)",
+    ["controller_id", "port", "device_name"],
+)
+
+device_abnormal = Gauge(
+    "acinfinity_device_abnormal",
+    "Abnormal state (0=normal, non-zero=fault)",
     ["controller_id", "port", "device_name"],
 )
 

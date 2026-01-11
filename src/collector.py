@@ -176,6 +176,34 @@ class ACInfinityCollector:
             if vpd is not None:
                 metrics.controller_vpd.labels(*labels).set(vpd / 100)
 
+            # Temperature trend (0=stable, 1=rising, 2=falling)
+            t_trend = device_info_data.get("tTrend")
+            if t_trend is not None:
+                metrics.controller_temperature_trend.labels(*labels).set(t_trend)
+
+            # Humidity trend (0=stable, 1=rising, 2=falling)
+            h_trend = device_info_data.get("hTrend")
+            if h_trend is not None:
+                metrics.controller_humidity_trend.labels(*labels).set(h_trend)
+
+            # Controller mode
+            cur_mode = device_info_data.get("curMode")
+            if cur_mode is not None:
+                metrics.controller_mode.labels(*labels).set(cur_mode)
+
+            # Last seen timestamp
+            last_seen = device.get("devAccesstime")
+            if last_seen is not None:
+                metrics.controller_last_seen.labels(*labels).set(last_seen)
+
+            # Version info (firmware, hardware, wifi)
+            firmware_version = device.get("firmwareVersion", "unknown")
+            hardware_version = device.get("hardwareVersion", "unknown")
+            wifi_name = device.get("wifiName", "unknown")
+            metrics.controller_version_info.labels(
+                controller_id, controller_name, firmware_version, hardware_version, wifi_name
+            ).set(1)
+
             # Process ports (connected devices)
             ports = device_info_data.get("ports") or []
             for port_data in ports:
@@ -205,6 +233,27 @@ class ACInfinityCollector:
                 if state is not None:
                     metrics.device_state.labels(*port_labels).set(state)
 
+                # Device mode
+                port_mode = port_data.get("curMode")
+                if port_mode is not None:
+                    metrics.device_mode.labels(*port_labels).set(port_mode)
+
+                # Device connected (based on portResistance - 65535 means not connected)
+                port_resistance = port_data.get("portResistance")
+                if port_resistance is not None:
+                    connected = 0 if port_resistance == 65535 else 1
+                    metrics.device_connected.labels(*port_labels).set(connected)
+
+                # Overcurrent status
+                overcurrent = port_data.get("overcurrentStatus")
+                if overcurrent is not None:
+                    metrics.device_overcurrent.labels(*port_labels).set(overcurrent)
+
+                # Abnormal state
+                abnormal = port_data.get("abnormalState")
+                if abnormal is not None:
+                    metrics.device_abnormal.labels(*port_labels).set(abnormal)
+
             # Process sensors
             sensors = device_info_data.get("sensors") or []
             for sensor in sensors:
@@ -227,6 +276,10 @@ class ACInfinityCollector:
             metrics.controller_temperature,
             metrics.controller_humidity,
             metrics.controller_vpd,
+            metrics.controller_temperature_trend,
+            metrics.controller_humidity_trend,
+            metrics.controller_mode,
+            metrics.controller_last_seen,
         )
         self._clear_stale_metrics(
             current_devices,
@@ -235,6 +288,10 @@ class ACInfinityCollector:
             metrics.device_speed,
             metrics.device_online,
             metrics.device_state,
+            metrics.device_mode,
+            metrics.device_connected,
+            metrics.device_overcurrent,
+            metrics.device_abnormal,
         )
         self._clear_stale_metrics(
             current_sensor_temp, "sensor_temp", metrics.sensor_temperature
