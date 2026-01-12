@@ -191,10 +191,8 @@ class ACInfinityCollector:
             if cur_mode is not None:
                 metrics.controller_mode.labels(*labels).set(cur_mode)
 
-            # Last seen timestamp
-            last_seen = device.get("devAccesstime")
-            if last_seen is not None:
-                metrics.controller_last_seen.labels(*labels).set(last_seen)
+            # Last seen timestamp - use current time when we successfully get data
+            metrics.controller_last_seen.labels(*labels).set(start_time)
 
             # Version info (firmware, hardware, wifi)
             firmware_version = device.get("firmwareVersion", "unknown")
