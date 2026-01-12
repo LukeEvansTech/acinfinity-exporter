@@ -68,7 +68,7 @@ docker run -d \
   -p 8000:8000 \
   -e ACINFINITY_EMAIL=your@email.com \
   -e ACINFINITY_PASSWORD=yourpassword \
-  ghcr.io/lukeeevanstech/acinfinity:latest
+  ghcr.io/lukeeevanstech/acinfinity-exporter:latest
 ```
 
 ### Docker Compose
@@ -76,7 +76,7 @@ docker run -d \
 ```yaml
 services:
   acinfinity-exporter:
-    image: ghcr.io/lukeeevanstech/acinfinity:latest
+    image: ghcr.io/lukeeevanstech/acinfinity-exporter:latest
     container_name: acinfinity-exporter
     restart: unless-stopped
     ports:
