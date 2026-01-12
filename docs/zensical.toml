@@ -1,0 +1,63 @@
+[project]
+site_name = "AC Infinity Prometheus Exporter"
+site_description = "A Prometheus exporter for AC Infinity UIS controllers"
+site_author = "LukeEvansTech"
+site_url = "https://lukeevansTech.github.io/acinfinity-exporter/"
+copyright = "Copyright &copy; 2025 LukeEvansTech"
+generator = false
+
+docs_dir = "docs"
+site_dir = "site"
+use_directory_urls = true
+dev_addr = "localhost:8000"
+
+extra_css = ["assets/stylesheets/custom.css"]
+
+repo_url = "https://github.com/LukeEvansTech/acinfinity-exporter"
+repo_name = "GitHub"
+edit_uri = "edit/main/docs/docs"
+
+[project.theme]
+name = "material"
+variant = "modern"
+language = "en"
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme: light)"
+scheme = "default"
+primary = "teal"
+accent = "teal"
+
+[project.theme.palette.toggle]
+icon = "material/brightness-7"
+name = "Switch to dark mode"
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme: dark)"
+scheme = "slate"
+primary = "teal"
+accent = "teal"
+
+[project.theme.palette.toggle]
+icon = "material/brightness-4"
+name = "Switch to light mode"
+
+[[project.nav]]
+name = "Home"
+path = "index.md"
+
+[[project.nav]]
+name = "Installation"
+path = "installation.md"
+
+[[project.nav]]
+name = "Configuration"
+path = "configuration.md"
+
+[[project.nav]]
+name = "Metrics"
+path = "metrics.md"
+
+[[project.nav]]
+name = "Prometheus Setup"
+path = "prometheus.md"

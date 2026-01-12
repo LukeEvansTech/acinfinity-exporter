@@ -2,6 +2,8 @@
 
 A Prometheus exporter for AC Infinity UIS controllers (grow tent fans and environmental equipment).
 
+**[Documentation](https://lukeeevanstech.github.io/acinfinity-exporter/)**
+
 ## Features
 
 - Polls AC Infinity cloud API at configurable intervals
