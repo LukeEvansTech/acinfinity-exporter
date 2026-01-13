@@ -41,23 +41,3 @@ accent = "teal"
 [project.theme.palette.toggle]
 icon = "material/brightness-4"
 name = "Switch to light mode"
-
-[[project.nav]]
-name = "Home"
-path = "index.md"
-
-[[project.nav]]
-name = "Installation"
-path = "installation.md"
-
-[[project.nav]]
-name = "Configuration"
-path = "configuration.md"
-
-[[project.nav]]
-name = "Metrics"
-path = "metrics.md"
-
-[[project.nav]]
-name = "Prometheus Setup"
-path = "prometheus.md"
