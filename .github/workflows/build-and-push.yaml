@@ -57,7 +57,7 @@ jobs:
       - name: Extract metadata (non-release)
         id: meta-dev
         if: github.event_name != 'release'
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@030e881283bb7a6894de51c315a6bfe6a94e05cf # v6
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           flavor: |
@@ -69,7 +69,7 @@ jobs:
       - name: Extract metadata (release)
         id: meta-release
         if: github.event_name == 'release'
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@030e881283bb7a6894de51c315a6bfe6a94e05cf # v6
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           flavor: |
