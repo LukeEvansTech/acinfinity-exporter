@@ -35,6 +35,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Read VERSION file
         id: version
@@ -107,15 +109,20 @@ jobs:
         run: |
           echo "## Build Complete" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Image**: \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "**Version**: \`${{ steps.version.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "**Digest**: \`${{ steps.build.outputs.digest }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Image**: \`${{ env.REGISTRY }}/${IMAGE_NAME}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Version**: \`${STEPS_VERSION_OUTPUTS_VERSION}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Digest**: \`${STEPS_BUILD_OUTPUTS_DIGEST}\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Tags" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           if [[ "${{ github.event_name }}" == "release" ]]; then
-            echo "${{ steps.meta-release.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
+            echo "${STEPS_META_RELEASE_OUTPUTS_TAGS}" >> $GITHUB_STEP_SUMMARY
           else
-            echo "${{ steps.meta-dev.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
+            echo "${STEPS_META_DEV_OUTPUTS_TAGS}" >> $GITHUB_STEP_SUMMARY
           fi
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+        env:
+          STEPS_VERSION_OUTPUTS_VERSION: ${{ steps.version.outputs.version }}
+          STEPS_BUILD_OUTPUTS_DIGEST: ${{ steps.build.outputs.digest }}
+          STEPS_META_RELEASE_OUTPUTS_TAGS: ${{ steps.meta-release.outputs.tags }}
+          STEPS_META_DEV_OUTPUTS_TAGS: ${{ steps.meta-dev.outputs.tags }}
