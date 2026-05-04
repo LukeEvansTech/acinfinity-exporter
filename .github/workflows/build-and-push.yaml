@@ -20,6 +20,9 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository_owner }}/acinfinity-exporter
 
+permissions:
+  contents: read
+
 jobs:
   build:
     name: Build Container
