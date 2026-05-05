@@ -17,6 +17,9 @@ on:
           - minor
           - major
 
+permissions:
+  contents: read
+
 jobs:
   release:
     name: Create Release
@@ -28,6 +31,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Get current version
         id: current
@@ -38,7 +42,7 @@ jobs:
       - name: Calculate next version
         id: next
         run: |
-          CURRENT="${{ steps.current.outputs.version }}"
+          CURRENT="${STEPS_CURRENT_OUTPUTS_VERSION}"
           BUMP="${{ inputs.bump || 'patch' }}"
 
           IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
@@ -61,34 +65,40 @@ jobs:
           NEXT="${MAJOR}.${MINOR}.${PATCH}"
           echo "version=${NEXT}" >> $GITHUB_OUTPUT
           echo "Bumping from ${CURRENT} to ${NEXT} (${BUMP})"
+        env:
+          STEPS_CURRENT_OUTPUTS_VERSION: ${{ steps.current.outputs.version }}
 
       - name: Check if release already exists
         id: check
         run: |
-          if gh release view "v${{ steps.next.outputs.version }}" &>/dev/null; then
+          if gh release view "v${STEPS_NEXT_OUTPUTS_VERSION}" &>/dev/null; then
             echo "exists=true" >> $GITHUB_OUTPUT
-            echo "Release v${{ steps.next.outputs.version }} already exists, skipping"
+            echo "Release v${STEPS_NEXT_OUTPUTS_VERSION} already exists, skipping"
           else
             echo "exists=false" >> $GITHUB_OUTPUT
           fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          STEPS_NEXT_OUTPUTS_VERSION: ${{ steps.next.outputs.version }}
 
       - name: Update VERSION file
         if: steps.check.outputs.exists == 'false'
         run: |
-          echo "${{ steps.next.outputs.version }}" > VERSION
+          echo "${STEPS_NEXT_OUTPUTS_VERSION}" > VERSION
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add VERSION
-          git commit -m "chore: bump version to ${{ steps.next.outputs.version }}"
+          git commit -m "chore: bump version to ${STEPS_NEXT_OUTPUTS_VERSION}"
           git push
+        env:
+          STEPS_NEXT_OUTPUTS_VERSION: ${{ steps.next.outputs.version }}
 
       - name: Create Release
         if: steps.check.outputs.exists == 'false'
         run: |
-          gh release create "v${{ steps.next.outputs.version }}" \
-            --title "v${{ steps.next.outputs.version }}" \
+          gh release create "v${STEPS_NEXT_OUTPUTS_VERSION}" \
+            --title "v${STEPS_NEXT_OUTPUTS_VERSION}" \
             --generate-notes
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          STEPS_NEXT_OUTPUTS_VERSION: ${{ steps.next.outputs.version }}
