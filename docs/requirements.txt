@@ -1,17 +1,3 @@
-# zensical 0.0.43 — pinned to exact version with SHA-256 hashes
-# https://zensical.org/ — managed by Renovate
-# Hashes cover all 13 PyPI artifacts (wheels + sdist) for cross-platform use
-zensical==0.0.43 \
-    --hash=sha256:03a9d1744a6394ad66c355d6f1de04cfd92efa525b0b94bf6dbf6971c5cd2c6b \
-    --hash=sha256:0e278eb948a0b7545d50609d713c7c27e366dade4523ff73a311a5d5f136518a \
-    --hash=sha256:17c335362b6bac3a50178181694a964f6d9f0c516fc532129ba5a0a5c4103fb6 \
-    --hash=sha256:4c4c85978c765b3e7f347e8102dfe1373d4bbe4229d7008b6bdbf352f1fbcd7f \
-    --hash=sha256:60022f4a6b95e46ec0023f51052fcd491743b3ebd08c0066b22a5cf1e741fecd \
-    --hash=sha256:751385accc92cccfd4560dabed7c423870686ef6ede244a67e5c96286af25e8f \
-    --hash=sha256:85055a115b12f49c6ab194dcf04f966fc06b690ed6a8ddddd819929fc5f340e6 \
-    --hash=sha256:8a75ddd4bb3cd3c4a8e71d2ebae44c5611fd636c1d355c6124dd96e2f9c52838 \
-    --hash=sha256:90d7c06ffd07b2bdf78bef041d541baba8a3ea51fd2dd84dbdbc5b0229076524 \
-    --hash=sha256:b85e5ab99fbda13823e67c43a4be6e5ebda6600602969c6575e143f20ac203fd \
-    --hash=sha256:b8fe97f185194215f6193af45a17d2b30ebd72c8113e3650f2d7d6767b9c2206 \
-    --hash=sha256:dc2d3804ff562795c1024130e0c3ce79736467930729dda314f096d0e35b98c8 \
-    --hash=sha256:dd3ff5bfa6e65cf3d2550dc639c3da2a3bfa11087b83d57e06623c4c1607d583
+# Zensical documentation requirements
+# https://zensical.org/
+zensical>=0.0.4
