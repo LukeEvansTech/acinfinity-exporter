@@ -15,3 +15,9 @@ MD041: false
 # MD024: duplicate headings — only block siblings, not nested
 MD024:
   siblings_only: true
+
+# MD060: table-column-style — disabled. Newer markdownlint rule that enforces
+# exact pipe-padding consistency across every table cell; on hand-maintained
+# docs (wide config/reference tables) it produces pure stylistic churn with no
+# correctness value.
+MD060: false
