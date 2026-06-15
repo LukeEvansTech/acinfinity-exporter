@@ -8,6 +8,7 @@ on:
     paths:
       - "docs/**"
       - ".github/workflows/**"
+      - ".renovaterc.json5"
       - "renovate.json"
       - ".markdownlint.yml"
 
