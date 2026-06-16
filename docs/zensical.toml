@@ -41,3 +41,6 @@ accent = "teal"
 [project.theme.palette.toggle]
 icon = "material/brightness-4"
 name = "Switch to light mode"
+
+[markdown_extensions.pymdownx.superfences]
+custom_fences = [{ name = "mermaid", class = "mermaid", format = "pymdownx.superfences.fence_code_format" }]
