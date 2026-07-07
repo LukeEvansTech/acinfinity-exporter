@@ -7,7 +7,7 @@ scraping. Includes an optional fan-sync controller that syncs intake fan speed t
 a percentage of exhaust fan speed. Ships as a Docker image; docs are published via
 zensical to GitHub Pages.
 
-Status: active, last commit 2026-01-13.
+Status: active, last commit 2026-07-07.
 
 ## Key files
 
