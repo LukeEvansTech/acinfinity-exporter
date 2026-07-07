@@ -1,0 +1,21 @@
+# Canonical lint workflow for zensical docs repos.
+# Thin caller of LukeEvansTech/shared-workflows super-linter reusable.
+# Replace 8fd92dc677d0ca251d3a287e7a0077df201f8135 with the shared-workflows main SHA (automated by rollout_zensical_standard.py).
+name: Lint
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  statuses: write
+  pull-requests: write
+
+jobs:
+  lint:
+    uses: LukeEvansTech/shared-workflows/.github/workflows/super-linter.yml@8fd92dc677d0ca251d3a287e7a0077df201f8135 # v1
+    with:
+      soft-launch: false
