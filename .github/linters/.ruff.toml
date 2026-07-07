@@ -1,0 +1,7 @@
+# Align Ruff's formatter with Black (line-length 88) so PYTHON_BLACK and
+# PYTHON_RUFF_FORMAT don't conflict — super-linter enables both, and its
+# bundled Ruff defaults to 120 while Black defaults to 88.
+line-length = 88
+
+[lint]
+ignore = ["E203"]
