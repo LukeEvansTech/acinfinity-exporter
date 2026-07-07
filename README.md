@@ -11,6 +11,7 @@ A Prometheus exporter for AC Infinity UIS controllers (grow tent fans and enviro
 - Supports multiple controllers and devices
 - Handles sensor data from probes (temperature, humidity, VPD, CO2, light, soil)
 - Automatic re-authentication on token expiry
+- **Fan Sync Controller**: Automatically sync intake fan speed to a percentage of exhaust fan speed
 
 ## Metrics
 
@@ -112,6 +113,49 @@ scrape_configs:
 ```bash
 docker build -t acinfinity-exporter .
 ```
+
+## Fan Sync Controller
+
+The fan sync controller automatically keeps intake fan speed synchronized to a percentage of exhaust fan speed, creating a slight positive pressure bias.
+
+### How It Works
+
+1. Polls the AC Infinity API to read exhaust fan speed
+2. Calculates target intake speed (default: 85% of exhaust)
+3. Sets intake fan to ON mode with calculated speed
+4. Repeats at configurable interval
+
+### Fan Sync Configuration
+
+| Environment Variable | Required | Default | Description |
+|---------------------|----------|---------|-------------|
+| `ACINFINITY_EMAIL` | Yes | - | AC Infinity account email |
+| `ACINFINITY_PASSWORD` | Yes | - | AC Infinity account password |
+| `EXHAUST_CONTROLLER` | Yes | - | Name of exhaust controller (as shown in app) |
+| `EXHAUST_PORT` | No | 1 | Port number of exhaust fan (1-4) |
+| `INTAKE_CONTROLLER` | Yes | - | Name of intake controller (as shown in app) |
+| `INTAKE_PORT` | No | 1 | Port number of intake fan (1-4) |
+| `INTAKE_RATIO` | No | 0.85 | Intake speed ratio (0.85 = 85% of exhaust) |
+| `SYNC_INTERVAL` | No | 60 | Seconds between sync checks |
+| `LOG_LEVEL` | No | INFO | Logging level |
+
+### Running Fan Sync
+
+```bash
+docker run -d \
+  --name acinfinity-fan-sync \
+  -e ACINFINITY_EMAIL=your@email.com \
+  -e ACINFINITY_PASSWORD=yourpassword \
+  -e EXHAUST_CONTROLLER="Garage Main Rack" \
+  -e INTAKE_CONTROLLER="Garage Comms Rack" \
+  -e INTAKE_RATIO=0.85 \
+  ghcr.io/lukeeevanstech/acinfinity-exporter:latest \
+  python -m src.fan_sync
+```
+
+### Kubernetes Deployment
+
+See `deploy/kubernetes/` for Flux CD / Helm manifests to deploy in a Kubernetes cluster.
 
 ## License
 
