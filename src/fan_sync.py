@@ -52,9 +52,11 @@ class ACInfinityFanSync:
         self.sync_config = sync_config
         self.token: str | None = None
         self.session = requests.Session()
-        self.session.headers.update({
-            "Content-Type": "application/x-www-form-urlencoded",
-        })
+        self.session.headers.update(
+            {
+                "Content-Type": "application/x-www-form-urlencoded",
+            }
+        )
         self._running = True
 
     def authenticate(self) -> bool:
@@ -74,7 +76,9 @@ class ACInfinityFanSync:
             data = response.json()
 
             if data.get("code") != 200:
-                logger.error("Authentication failed: %s", data.get("msg", "Unknown error"))
+                logger.error(
+                    "Authentication failed: %s", data.get("msg", "Unknown error")
+                )
                 return False
 
             self.token = data.get("data", {}).get("appId")
@@ -113,7 +117,9 @@ class ACInfinityFanSync:
             data = response.json()
 
             if data.get("code") != 200:
-                logger.error("Failed to get devices: %s", data.get("msg", "Unknown error"))
+                logger.error(
+                    "Failed to get devices: %s", data.get("msg", "Unknown error")
+                )
                 return []
 
             return data.get("data", [])
@@ -142,7 +148,9 @@ class ACInfinityFanSync:
 
         return None
 
-    def get_device_settings(self, controller_id: str, port: int) -> dict[str, Any] | None:
+    def get_device_settings(
+        self, controller_id: str, port: int
+    ) -> dict[str, Any] | None:
         """Get current settings for a device port."""
         if not self.token:
             return None
@@ -167,9 +175,7 @@ class ACInfinityFanSync:
             logger.error("Failed to get device settings: %s", e)
             return None
 
-    def set_device_speed(
-        self, controller_id: str, port: int, speed: int
-    ) -> bool:
+    def set_device_speed(self, controller_id: str, port: int, speed: int) -> bool:
         """Set the speed of a device.
 
         This sets the device to ON mode with the specified speed.
@@ -202,12 +208,26 @@ class ACInfinityFanSync:
 
         # Include other required fields from existing settings
         required_fields = [
-            "modeSetid", "externalPort", "surplus", "offSpead",
-            "loadState", "loadType", "devHt", "devLt", "devHh", "devLh",
-            "activeHt", "activeLt", "activeHh", "activeLh",
-            "acitveTimerOn", "acitveTimerOff",
-            "activeCycleOn", "activeCycleOff",
-            "schedStartTime", "schedEndtTime",
+            "modeSetid",
+            "externalPort",
+            "surplus",
+            "offSpead",
+            "loadState",
+            "loadType",
+            "devHt",
+            "devLt",
+            "devHh",
+            "devLh",
+            "activeHt",
+            "activeLt",
+            "activeHh",
+            "activeLh",
+            "acitveTimerOn",
+            "acitveTimerOff",
+            "activeCycleOn",
+            "activeCycleOff",
+            "schedStartTime",
+            "schedEndtTime",
         ]
 
         for field in required_fields:
