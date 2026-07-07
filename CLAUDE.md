@@ -27,7 +27,7 @@ Set via environment variables: `ACINFINITY_EMAIL`, `ACINFINITY_PASSWORD` (requir
 
 ## Commands
 
-```
+```text
 pip install -r requirements.txt
 python -m src.main          # run exporter
 python -m src.fan_sync       # run fan sync controller
