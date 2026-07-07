@@ -175,6 +175,7 @@ class ACInfinityFanSync:
             logger.error("Failed to get device settings: %s", e)
             return None
 
+    # pylint: disable-next=too-many-return-statements
     def set_device_speed(self, controller_id: str, port: int, speed: int) -> bool:
         """Set the speed of a device.
 
@@ -356,7 +357,7 @@ class ACInfinityFanSync:
         while self._running:
             try:
                 self.sync_once()
-            except Exception as e:
+            except Exception as e:  # pylint: disable=broad-exception-caught
                 logger.exception("Error during sync: %s", e)
 
             # Sleep in small increments to allow quick shutdown
@@ -418,7 +419,7 @@ def main() -> None:
         sys.exit(1)
 
     # Handle shutdown signals
-    def shutdown(signum, frame):
+    def shutdown(signum, _frame):
         logger.info("Received signal %d, shutting down", signum)
         fan_sync.stop()
 
