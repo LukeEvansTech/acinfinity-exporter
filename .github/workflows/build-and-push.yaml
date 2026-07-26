@@ -32,14 +32,18 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
 
       - name: Read VERSION file
         id: version
         run: |
-          VERSION=$(cat VERSION | tr -d '[:space:]')
-          echo "version=${VERSION}" >> $GITHUB_OUTPUT
-          echo "major=$(echo $VERSION | cut -d. -f1)" >> $GITHUB_OUTPUT
-          echo "minor=$(echo $VERSION | cut -d. -f1-2)" >> $GITHUB_OUTPUT
+          VERSION=$(tr -d '[:space:]' < VERSION)
+          {
+            echo "version=${VERSION}"
+            echo "major=$(echo "${VERSION}" | cut -d. -f1)"
+            echo "minor=$(echo "${VERSION}" | cut -d. -f1-2)"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8 # v4.2.0
@@ -101,18 +105,27 @@ jobs:
           push-to-registry: true
 
       - name: Summary
+        env:
+          IMAGE_REF: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          VERSION: ${{ steps.version.outputs.version }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+          EVENT_NAME: ${{ github.event_name }}
+          TAGS_RELEASE: ${{ steps.meta-release.outputs.tags }}
+          TAGS_DEV: ${{ steps.meta-dev.outputs.tags }}
         run: |
-          echo "## Build Complete" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Image**: \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "**Version**: \`${{ steps.version.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "**Digest**: \`${{ steps.build.outputs.digest }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Tags" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          if [[ "${{ github.event_name }}" == "release" ]]; then
-            echo "${{ steps.meta-release.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "${{ steps.meta-dev.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
-          fi
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          {
+            echo "## Build Complete"
+            echo ""
+            echo "**Image**: \`${IMAGE_REF}\`"
+            echo "**Version**: \`${VERSION}\`"
+            echo "**Digest**: \`${DIGEST}\`"
+            echo ""
+            echo "### Tags"
+            echo '```'
+            if [[ "${EVENT_NAME}" == "release" ]]; then
+              echo "${TAGS_RELEASE}"
+            else
+              echo "${TAGS_DEV}"
+            fi
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
