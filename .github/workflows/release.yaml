@@ -25,22 +25,26 @@ jobs:
       contents: write
     steps:
       - name: Checkout
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        # persist-credentials is deliberately NOT set to false here: the
+        # "Update VERSION file" step below commits and pushes back to the branch,
+        # which needs the credential helper the checkout leaves behind. This is the
+        # documented exception to the house artipacked default.
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0 # zizmor: ignore[artipacked]
         with:
           fetch-depth: 0
 
       - name: Get current version
         id: current
         run: |
-          VERSION=$(cat VERSION | tr -d '[:space:]')
-          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          VERSION=$(tr -d '[:space:]' < VERSION)
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
 
       - name: Calculate next version
         id: next
+        env:
+          CURRENT: ${{ steps.current.outputs.version }}
+          BUMP: ${{ inputs.bump || 'patch' }}
         run: |
-          CURRENT="${{ steps.current.outputs.version }}"
-          BUMP="${{ inputs.bump || 'patch' }}"
-
           IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
 
           case "$BUMP" in
@@ -59,36 +63,40 @@ jobs:
           esac
 
           NEXT="${MAJOR}.${MINOR}.${PATCH}"
-          echo "version=${NEXT}" >> $GITHUB_OUTPUT
+          echo "version=${NEXT}" >> "$GITHUB_OUTPUT"
           echo "Bumping from ${CURRENT} to ${NEXT} (${BUMP})"
 
       - name: Check if release already exists
         id: check
-        run: |
-          if gh release view "v${{ steps.next.outputs.version }}" &>/dev/null; then
-            echo "exists=true" >> $GITHUB_OUTPUT
-            echo "Release v${{ steps.next.outputs.version }} already exists, skipping"
-          else
-            echo "exists=false" >> $GITHUB_OUTPUT
-          fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NEXT_VERSION: ${{ steps.next.outputs.version }}
+        run: |
+          if gh release view "v${NEXT_VERSION}" &>/dev/null; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "Release v${NEXT_VERSION} already exists, skipping"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Update VERSION file
         if: steps.check.outputs.exists == 'false'
+        env:
+          NEXT_VERSION: ${{ steps.next.outputs.version }}
         run: |
-          echo "${{ steps.next.outputs.version }}" > VERSION
+          echo "${NEXT_VERSION}" > VERSION
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add VERSION
-          git commit -m "chore: bump version to ${{ steps.next.outputs.version }}"
+          git commit -m "chore: bump version to ${NEXT_VERSION}"
           git push
 
       - name: Create Release
         if: steps.check.outputs.exists == 'false'
-        run: |
-          gh release create "v${{ steps.next.outputs.version }}" \
-            --title "v${{ steps.next.outputs.version }}" \
-            --generate-notes
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NEXT_VERSION: ${{ steps.next.outputs.version }}
+        run: |
+          gh release create "v${NEXT_VERSION}" \
+            --title "v${NEXT_VERSION}" \
+            --generate-notes
