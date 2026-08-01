@@ -23,11 +23,12 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      pull-requests: write
     steps:
       - name: Checkout
         # persist-credentials is deliberately NOT set to false here: the
-        # "Update VERSION file" step below commits and pushes back to the branch,
-        # which needs the credential helper the checkout leaves behind. This is the
+        # "Update VERSION file" step below pushes the bump branch, which needs
+        # the credential helper the checkout leaves behind. This is the
         # documented exception to the house artipacked default.
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0 # zizmor: ignore[artipacked]
         with:
@@ -80,16 +81,41 @@ jobs:
           fi
 
       - name: Update VERSION file
+        # main is protected by baseline-main-protection (PR required, 0
+        # approvals), and GitHub refuses the Actions app as a bypass actor on
+        # personal-account rulesets — so the bump rides a PR the job merges
+        # itself. Needs the repo's "Allow GitHub Actions to create and approve
+        # pull requests" setting on (enabled 2026-08-01).
         if: steps.check.outputs.exists == 'false'
         env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NEXT_VERSION: ${{ steps.next.outputs.version }}
         run: |
+          BRANCH="release/bump-v${NEXT_VERSION}"
           echo "${NEXT_VERSION}" > VERSION
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
           git add VERSION
           git commit -m "chore: bump version to ${NEXT_VERSION}"
-          git push
+          git push origin "$BRANCH"
+
+          gh pr create \
+            --base main \
+            --head "$BRANCH" \
+            --title "chore: bump version to ${NEXT_VERSION}" \
+            --body "Automated VERSION bump for the v${NEXT_VERSION} release."
+
+          # Mergeability can lag a moment after PR creation; retry briefly.
+          for attempt in 1 2 3 4 5; do
+            if gh pr merge "$BRANCH" --squash --delete-branch; then
+              exit 0
+            fi
+            echo "Merge attempt ${attempt} failed, retrying in 10s"
+            sleep 10
+          done
+          echo "Failed to merge VERSION bump PR" >&2
+          exit 1
 
       - name: Create Release
         if: steps.check.outputs.exists == 'false'
