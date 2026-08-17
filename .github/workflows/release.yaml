@@ -17,6 +17,11 @@ on:
           - minor
           - major
 
+# Top-level default is read-only; the release job below opts up to the
+# write scopes it needs (CKV2_GHA_1, zizmor excessive-permissions).
+permissions:
+  contents: read
+
 jobs:
   release:
     name: Create Release
