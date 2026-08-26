@@ -35,8 +35,16 @@ jobs:
         # "Update VERSION file" step below pushes the bump branch, which needs
         # the credential helper the checkout leaves behind. This is the
         # documented exception to the house artipacked default.
+        #
+        # ref is pinned to main so a workflow_dispatch run started against a
+        # stray branch/tag selection in the Actions UI can't have its commits
+        # squash-merged into main disguised as a VERSION bump: without this,
+        # checkout defaults to whatever ref was picked in the "Run workflow"
+        # dropdown, and the self-merge below (0 required approvals) would
+        # never give a human the chance to notice.
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1 # zizmor: ignore[artipacked]
         with:
+          ref: main
           fetch-depth: 0
 
       - name: Get current version
