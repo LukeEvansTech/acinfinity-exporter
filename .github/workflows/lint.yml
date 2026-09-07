@@ -16,6 +16,6 @@ permissions:
 
 jobs:
   lint:
-    uses: LukeEvansTech/shared-workflows/.github/workflows/super-linter.yml@7f10cdc73446f1d0adbdf12074dcd0f961a121fa # v1
+    uses: LukeEvansTech/shared-workflows/.github/workflows/super-linter.yml@4ad6729e601bf0b89eb08d8bf6ebc0e9cf91b775 # v1
     with:
       soft-launch: false
