@@ -17,7 +17,7 @@ import requests
 
 logger = logging.getLogger(__name__)
 
-API_BASE = "http://www.acinfinityserver.com"
+API_BASE = "https://www.acinfinityserver.com"
 LOGIN_ENDPOINT = f"{API_BASE}/api/user/appUserLogin"
 DEVICES_ENDPOINT = f"{API_BASE}/api/user/devInfoListAll"
 GET_SETTINGS_ENDPOINT = f"{API_BASE}/api/dev/getdevModeSettingList"
@@ -55,6 +55,8 @@ class ACInfinityFanSync:
         self.session.headers.update(
             {
                 "Content-Type": "application/x-www-form-urlencoded",
+                # Match the Android app; the API behaves differently for other agents
+                "User-Agent": "okhttp/4.12.0",
             }
         )
         self._running = True

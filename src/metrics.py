@@ -55,7 +55,13 @@ controller_last_seen = Gauge(
 controller_version_info = Gauge(
     "acinfinity_controller_version_info",
     "Controller version information (always 1, use labels for info)",
-    ["controller_id", "controller_name", "firmware_version", "hardware_version", "wifi_name"],
+    [
+        "controller_id",
+        "controller_name",
+        "firmware_version",
+        "hardware_version",
+        "wifi_name",
+    ],
 )
 
 # Device/port metrics
@@ -141,6 +147,36 @@ sensor_light = Gauge(
 sensor_soil = Gauge(
     "acinfinity_sensor_soil_percent",
     "Soil moisture percentage",
+    ["controller_id", "port"],
+)
+
+sensor_hydro_ph = Gauge(
+    "acinfinity_sensor_hydro_ph",
+    "Hydro sensor pH",
+    ["controller_id", "port"],
+)
+
+sensor_hydro_ec = Gauge(
+    "acinfinity_sensor_hydro_ec_microsiemens_per_cm",
+    "Hydro sensor electrical conductivity in microsiemens per cm",
+    ["controller_id", "port"],
+)
+
+sensor_hydro_tds = Gauge(
+    "acinfinity_sensor_hydro_tds_ppm",
+    "Hydro sensor total dissolved solids in ppm",
+    ["controller_id", "port"],
+)
+
+sensor_hydro_water_temperature = Gauge(
+    "acinfinity_sensor_hydro_water_temperature_celsius",
+    "Hydro sensor water temperature in Celsius",
+    ["controller_id", "port"],
+)
+
+sensor_water_detected = Gauge(
+    "acinfinity_sensor_water_detected",
+    "Water detect sensor state (1=water present, 0=dry)",
     ["controller_id", "port"],
 )
 

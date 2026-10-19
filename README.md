@@ -9,7 +9,7 @@ A Prometheus exporter for AC Infinity UIS controllers (grow tent fans and enviro
 - Polls AC Infinity cloud API at configurable intervals
 - Exposes metrics for Prometheus scraping
 - Supports multiple controllers and devices
-- Handles sensor data from probes (temperature, humidity, VPD, CO2, light, soil)
+- Handles sensor data from AI controller probes (temperature, humidity, VPD, CO2, light, soil, hydro, water detect)
 - Automatic re-authentication on token expiry
 - **Fan Sync Controller**: Automatically sync intake fan speed to a percentage of exhaust fan speed
 
@@ -17,49 +17,54 @@ A Prometheus exporter for AC Infinity UIS controllers (grow tent fans and enviro
 
 ### Controller Metrics
 
-| Metric | Description | Labels |
-|--------|-------------|--------|
-| `acinfinity_controller_info` | Controller information (always 1) | controller_id, controller_name |
+| Metric                                      | Description                       | Labels                         |
+| ------------------------------------------- | --------------------------------- | ------------------------------ |
+| `acinfinity_controller_info`                | Controller information (always 1) | controller_id, controller_name |
 | `acinfinity_controller_temperature_celsius` | Controller temperature in Celsius | controller_id, controller_name |
-| `acinfinity_controller_humidity_percent` | Controller humidity percentage | controller_id, controller_name |
-| `acinfinity_controller_vpd_kpa` | Controller VPD in kPa | controller_id, controller_name |
+| `acinfinity_controller_humidity_percent`    | Controller humidity percentage    | controller_id, controller_name |
+| `acinfinity_controller_vpd_kpa`             | Controller VPD in kPa             | controller_id, controller_name |
 
 ### Device Metrics
 
-| Metric | Description | Labels |
-|--------|-------------|--------|
-| `acinfinity_device_info` | Device information (always 1) | controller_id, port, device_name |
-| `acinfinity_device_speed` | Device speed (0-10) | controller_id, port, device_name |
-| `acinfinity_device_online` | Device online status (1/0) | controller_id, port, device_name |
-| `acinfinity_device_state` | Device state | controller_id, port, device_name |
+| Metric                     | Description                   | Labels                           |
+| -------------------------- | ----------------------------- | -------------------------------- |
+| `acinfinity_device_info`   | Device information (always 1) | controller_id, port, device_name |
+| `acinfinity_device_speed`  | Device speed (0-10)           | controller_id, port, device_name |
+| `acinfinity_device_online` | Device online status (1/0)    | controller_id, port, device_name |
+| `acinfinity_device_state`  | Device state                  | controller_id, port, device_name |
 
 ### Sensor Metrics
 
-| Metric | Description | Labels |
-|--------|-------------|--------|
-| `acinfinity_sensor_temperature_celsius` | Sensor temperature in Celsius | controller_id, port, sensor_type |
-| `acinfinity_sensor_humidity_percent` | Sensor humidity percentage | controller_id, port, sensor_type |
-| `acinfinity_sensor_vpd_kpa` | Sensor VPD in kPa | controller_id, port, sensor_type |
-| `acinfinity_sensor_co2_ppm` | CO2 level in ppm | controller_id, port |
-| `acinfinity_sensor_light_percent` | Light level percentage | controller_id, port |
-| `acinfinity_sensor_soil_percent` | Soil moisture percentage | controller_id, port |
+| Metric                                              | Description                                  | Labels                           |
+| --------------------------------------------------- | -------------------------------------------- | -------------------------------- |
+| `acinfinity_sensor_temperature_celsius`             | Sensor temperature in Celsius                | controller_id, port, sensor_type |
+| `acinfinity_sensor_humidity_percent`                | Sensor humidity percentage                   | controller_id, port, sensor_type |
+| `acinfinity_sensor_vpd_kpa`                         | Sensor VPD in kPa                            | controller_id, port, sensor_type |
+| `acinfinity_sensor_co2_ppm`                         | CO2 level in ppm                             | controller_id, port              |
+| `acinfinity_sensor_light_percent`                   | Light level percentage                       | controller_id, port              |
+| `acinfinity_sensor_soil_percent`                    | Soil moisture percentage                     | controller_id, port              |
+| `acinfinity_sensor_hydro_ph`                        | Hydro sensor pH                              | controller_id, port              |
+| `acinfinity_sensor_hydro_ec_microsiemens_per_cm`    | Hydro sensor conductivity in µS/cm           | controller_id, port              |
+| `acinfinity_sensor_hydro_tds_ppm`                   | Hydro sensor total dissolved solids in ppm   | controller_id, port              |
+| `acinfinity_sensor_hydro_water_temperature_celsius` | Hydro sensor water temperature in Celsius    | controller_id, port              |
+| `acinfinity_sensor_water_detected`                  | Water detect sensor (1=water present, 0=dry) | controller_id, port              |
 
 ### Exporter Metrics
 
-| Metric | Description |
-|--------|-------------|
-| `acinfinity_last_scrape_success` | Whether the last API scrape succeeded (1/0) |
-| `acinfinity_last_scrape_timestamp` | Unix timestamp of last scrape |
+| Metric                             | Description                                 |
+| ---------------------------------- | ------------------------------------------- |
+| `acinfinity_last_scrape_success`   | Whether the last API scrape succeeded (1/0) |
+| `acinfinity_last_scrape_timestamp` | Unix timestamp of last scrape               |
 
 ## Configuration
 
-| Environment Variable | Required | Default | Description |
-|---------------------|----------|---------|-------------|
-| `ACINFINITY_EMAIL` | Yes | - | AC Infinity account email |
-| `ACINFINITY_PASSWORD` | Yes | - | AC Infinity account password |
-| `METRICS_PORT` | No | 8000 | Port to expose metrics |
-| `POLL_INTERVAL` | No | 60 | Seconds between API polls |
-| `LOG_LEVEL` | No | INFO | Logging level (DEBUG, INFO, WARNING, ERROR) |
+| Environment Variable  | Required | Default | Description                                 |
+| --------------------- | -------- | ------- | ------------------------------------------- |
+| `ACINFINITY_EMAIL`    | Yes      | -       | AC Infinity account email                   |
+| `ACINFINITY_PASSWORD` | Yes      | -       | AC Infinity account password                |
+| `METRICS_PORT`        | No       | 8000    | Port to expose metrics                      |
+| `POLL_INTERVAL`       | No       | 60      | Seconds between API polls                   |
+| `LOG_LEVEL`           | No       | INFO    | Logging level (DEBUG, INFO, WARNING, ERROR) |
 
 ## Usage
 
@@ -95,18 +100,18 @@ services:
 
 ```yaml
 scrape_configs:
-  - job_name: 'acinfinity'
+  - job_name: "acinfinity"
     static_configs:
-      - targets: ['acinfinity-exporter:8000']
+      - targets: ["acinfinity-exporter:8000"]
     scrape_interval: 60s
 ```
 
 ## Endpoints
 
-| Endpoint | Description |
-|----------|-------------|
-| `/metrics` | Prometheus metrics |
-| `/health` | Health check (returns "OK") |
+| Endpoint   | Description                 |
+| ---------- | --------------------------- |
+| `/metrics` | Prometheus metrics          |
+| `/health`  | Health check (returns "OK") |
 
 ## Building
 
@@ -127,17 +132,17 @@ The fan sync controller automatically keeps intake fan speed synchronized to a p
 
 ### Fan Sync Configuration
 
-| Environment Variable | Required | Default | Description |
-|---------------------|----------|---------|-------------|
-| `ACINFINITY_EMAIL` | Yes | - | AC Infinity account email |
-| `ACINFINITY_PASSWORD` | Yes | - | AC Infinity account password |
-| `EXHAUST_CONTROLLER` | Yes | - | Name of exhaust controller (as shown in app) |
-| `EXHAUST_PORT` | No | 1 | Port number of exhaust fan (1-4) |
-| `INTAKE_CONTROLLER` | Yes | - | Name of intake controller (as shown in app) |
-| `INTAKE_PORT` | No | 1 | Port number of intake fan (1-4) |
-| `INTAKE_RATIO` | No | 0.85 | Intake speed ratio (0.85 = 85% of exhaust) |
-| `SYNC_INTERVAL` | No | 60 | Seconds between sync checks |
-| `LOG_LEVEL` | No | INFO | Logging level |
+| Environment Variable  | Required | Default | Description                                  |
+| --------------------- | -------- | ------- | -------------------------------------------- |
+| `ACINFINITY_EMAIL`    | Yes      | -       | AC Infinity account email                    |
+| `ACINFINITY_PASSWORD` | Yes      | -       | AC Infinity account password                 |
+| `EXHAUST_CONTROLLER`  | Yes      | -       | Name of exhaust controller (as shown in app) |
+| `EXHAUST_PORT`        | No       | 1       | Port number of exhaust fan (1-4)             |
+| `INTAKE_CONTROLLER`   | Yes      | -       | Name of intake controller (as shown in app)  |
+| `INTAKE_PORT`         | No       | 1       | Port number of intake fan (1-4)              |
+| `INTAKE_RATIO`        | No       | 0.85    | Intake speed ratio (0.85 = 85% of exhaust)   |
+| `SYNC_INTERVAL`       | No       | 60      | Seconds between sync checks                  |
+| `LOG_LEVEL`           | No       | INFO    | Logging level                                |
 
 ### Running Fan Sync
 

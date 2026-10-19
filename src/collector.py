@@ -10,18 +10,28 @@ from .client import ACInfinityClient
 
 logger = logging.getLogger(__name__)
 
-# Sensor type mappings
-SENSOR_TYPE_PROBE_TEMP_F = 1
-SENSOR_TYPE_PROBE_TEMP_C = 2
-SENSOR_TYPE_PROBE_HUMIDITY = 3
-SENSOR_TYPE_PROBE_VPD = 4
-SENSOR_TYPE_CTRL_TEMP_F = 5
-SENSOR_TYPE_CTRL_TEMP_C = 6
-SENSOR_TYPE_CTRL_HUMIDITY = 7
-SENSOR_TYPE_CTRL_VPD = 8
-SENSOR_TYPE_CO2 = 9
-SENSOR_TYPE_LIGHT = 10
-SENSOR_TYPE_SOIL = 12
+# Sensor type ids as reported in the "sensors" array of devInfoListAll.
+# Values follow dalinicus/homeassistant-acinfinity, whose fixtures come from
+# real AI controller captures; only AI controllers expose this array.
+SENSOR_TYPE_PROBE_TEMP_F = 0
+SENSOR_TYPE_PROBE_TEMP_C = 1
+SENSOR_TYPE_PROBE_HUMIDITY = 2
+SENSOR_TYPE_PROBE_VPD = 3
+SENSOR_TYPE_CTRL_TEMP_F = 4
+SENSOR_TYPE_CTRL_TEMP_C = 5
+SENSOR_TYPE_CTRL_HUMIDITY = 6
+SENSOR_TYPE_CTRL_VPD = 7
+SENSOR_TYPE_SOIL = 10
+SENSOR_TYPE_CO2 = 11
+SENSOR_TYPE_LIGHT = 12
+SENSOR_TYPE_HYDRO_PH = 13
+SENSOR_TYPE_HYDRO_EC_US = 14
+SENSOR_TYPE_HYDRO_EC_MS = 15
+SENSOR_TYPE_HYDRO_TDS_PPM = 16
+SENSOR_TYPE_HYDRO_TDS_PPT = 17
+SENSOR_TYPE_HYDRO_WATER_TEMP_F = 18
+SENSOR_TYPE_HYDRO_WATER_TEMP_C = 19
+SENSOR_TYPE_WATER = 20
 
 SENSOR_TYPE_NAMES = {
     SENSOR_TYPE_PROBE_TEMP_F: "probe_temp",
@@ -32,9 +42,6 @@ SENSOR_TYPE_NAMES = {
     SENSOR_TYPE_CTRL_TEMP_C: "ctrl_temp",
     SENSOR_TYPE_CTRL_HUMIDITY: "ctrl_humidity",
     SENSOR_TYPE_CTRL_VPD: "ctrl_vpd",
-    SENSOR_TYPE_CO2: "co2",
-    SENSOR_TYPE_LIGHT: "light",
-    SENSOR_TYPE_SOIL: "soil",
 }
 
 TEMPERATURE_SENSORS = {
@@ -57,7 +64,43 @@ VPD_SENSORS = {
 FAHRENHEIT_SENSORS = {
     SENSOR_TYPE_PROBE_TEMP_F,
     SENSOR_TYPE_CTRL_TEMP_F,
+    SENSOR_TYPE_HYDRO_WATER_TEMP_F,
 }
+
+WATER_TEMPERATURE_SENSORS = {
+    SENSOR_TYPE_HYDRO_WATER_TEMP_F,
+    SENSOR_TYPE_HYDRO_WATER_TEMP_C,
+}
+
+# Hydro EC and TDS arrive in one of two units; both are normalised to the
+# smaller unit so each has a single gauge.
+UNIT_MULTIPLIERS = {
+    SENSOR_TYPE_HYDRO_EC_MS: 1000,  # mS/cm -> uS/cm
+    SENSOR_TYPE_HYDRO_TDS_PPT: 1000,  # ppt -> ppm
+}
+
+# Which tracked-label set and gauge each single-gauge sensor type feeds.
+SIMPLE_SENSOR_GAUGES = {
+    SENSOR_TYPE_CO2: ("sensor_co2", metrics.sensor_co2),
+    SENSOR_TYPE_LIGHT: ("sensor_light", metrics.sensor_light),
+    SENSOR_TYPE_SOIL: ("sensor_soil", metrics.sensor_soil),
+    SENSOR_TYPE_HYDRO_PH: ("sensor_hydro_ph", metrics.sensor_hydro_ph),
+    SENSOR_TYPE_HYDRO_EC_US: ("sensor_hydro_ec", metrics.sensor_hydro_ec),
+    SENSOR_TYPE_HYDRO_EC_MS: ("sensor_hydro_ec", metrics.sensor_hydro_ec),
+    SENSOR_TYPE_HYDRO_TDS_PPM: ("sensor_hydro_tds", metrics.sensor_hydro_tds),
+    SENSOR_TYPE_HYDRO_TDS_PPT: ("sensor_hydro_tds", metrics.sensor_hydro_tds),
+    SENSOR_TYPE_WATER: ("sensor_water", metrics.sensor_water_detected),
+}
+
+SENSOR_GAUGES = {
+    "sensor_temp": metrics.sensor_temperature,
+    "sensor_humidity": metrics.sensor_humidity,
+    "sensor_vpd": metrics.sensor_vpd,
+    "sensor_hydro_water_temp": metrics.sensor_hydro_water_temperature,
+    **dict(SIMPLE_SENSOR_GAUGES.values()),
+}
+
+SENSOR_UNIT_FAHRENHEIT = 0
 
 
 def fahrenheit_to_celsius(f: float) -> float:
@@ -66,10 +109,14 @@ def fahrenheit_to_celsius(f: float) -> float:
 
 
 def scale_value(value: int | float, precision: int) -> float:
-    """Scale value based on precision (decimal places)."""
-    if precision <= 0:
+    """Scale a raw sensor integer by its reported precision.
+
+    The API's precision is one more than the number of decimal places, so
+    precision 3 means the value was multiplied by 100.
+    """
+    if precision <= 1:
         return float(value)
-    return value / (10 ** precision)
+    return value / (10 ** (precision - 1))
 
 
 class ACInfinityCollector:
@@ -83,12 +130,7 @@ class ACInfinityCollector:
         self._tracked_labels: dict[str, set[tuple]] = {
             "controller": set(),
             "device": set(),
-            "sensor_temp": set(),
-            "sensor_humidity": set(),
-            "sensor_vpd": set(),
-            "sensor_co2": set(),
-            "sensor_light": set(),
-            "sensor_soil": set(),
+            **{key: set() for key in SENSOR_GAUGES},
         }
 
     def start(self) -> None:
@@ -138,14 +180,7 @@ class ACInfinityCollector:
             logger.warning("No devices returned from API")
             return
 
-        current_controllers: set[tuple] = set()
-        current_devices: set[tuple] = set()
-        current_sensor_temp: set[tuple] = set()
-        current_sensor_humidity: set[tuple] = set()
-        current_sensor_vpd: set[tuple] = set()
-        current_sensor_co2: set[tuple] = set()
-        current_sensor_light: set[tuple] = set()
-        current_sensor_soil: set[tuple] = set()
+        current: dict[str, set[tuple]] = {key: set() for key in self._tracked_labels}
 
         for device in devices:
             controller_id = str(device.get("devId", ""))
@@ -156,7 +191,7 @@ class ACInfinityCollector:
                 continue
 
             labels = (controller_id, controller_name)
-            current_controllers.add(labels)
+            current["controller"].add(labels)
 
             # Controller info metric
             metrics.controller_info.labels(*labels).set(1)
@@ -171,8 +206,8 @@ class ACInfinityCollector:
             if humidity is not None:
                 metrics.controller_humidity.labels(*labels).set(humidity / 100)
 
-            # Controller VPD (divide by 100 for kPa)
-            vpd = device_info_data.get("vpd")
+            # Controller VPD (divide by 100 for kPa); the API key is "vpdnums"
+            vpd = device_info_data.get("vpdnums")
             if vpd is not None:
                 metrics.controller_vpd.labels(*labels).set(vpd / 100)
 
@@ -199,10 +234,14 @@ class ACInfinityCollector:
             hardware_version = device.get("hardwareVersion", "unknown")
             wifi_name = device.get("wifiName", "unknown")
             metrics.controller_version_info.labels(
-                controller_id, controller_name, firmware_version, hardware_version, wifi_name
+                controller_id,
+                controller_name,
+                firmware_version,
+                hardware_version,
+                wifi_name,
             ).set(1)
 
-            # Process ports (connected devices)
+            # Process ports (connected devices); standalone fans report null
             ports = device_info_data.get("ports") or []
             for port_data in ports:
                 port_num = str(port_data.get("port", ""))
@@ -212,7 +251,7 @@ class ACInfinityCollector:
                     continue
 
                 port_labels = (controller_id, port_num, port_name)
-                current_devices.add(port_labels)
+                current["device"].add(port_labels)
 
                 metrics.device_info.labels(*port_labels).set(1)
 
@@ -252,23 +291,14 @@ class ACInfinityCollector:
                 if abnormal is not None:
                     metrics.device_abnormal.labels(*port_labels).set(abnormal)
 
-            # Process sensors
+            # Process sensors (AI controllers only)
             sensors = device_info_data.get("sensors") or []
             for sensor in sensors:
-                self._process_sensor(
-                    sensor,
-                    controller_id,
-                    current_sensor_temp,
-                    current_sensor_humidity,
-                    current_sensor_vpd,
-                    current_sensor_co2,
-                    current_sensor_light,
-                    current_sensor_soil,
-                )
+                self._process_sensor(sensor, controller_id, current)
 
         # Clear stale metrics
         self._clear_stale_metrics(
-            current_controllers,
+            current["controller"],
             "controller",
             metrics.controller_info,
             metrics.controller_temperature,
@@ -280,7 +310,7 @@ class ACInfinityCollector:
             metrics.controller_last_seen,
         )
         self._clear_stale_metrics(
-            current_devices,
+            current["device"],
             "device",
             metrics.device_info,
             metrics.device_speed,
@@ -291,82 +321,71 @@ class ACInfinityCollector:
             metrics.device_overcurrent,
             metrics.device_abnormal,
         )
-        self._clear_stale_metrics(
-            current_sensor_temp, "sensor_temp", metrics.sensor_temperature
-        )
-        self._clear_stale_metrics(
-            current_sensor_humidity, "sensor_humidity", metrics.sensor_humidity
-        )
-        self._clear_stale_metrics(current_sensor_vpd, "sensor_vpd", metrics.sensor_vpd)
-        self._clear_stale_metrics(current_sensor_co2, "sensor_co2", metrics.sensor_co2)
-        self._clear_stale_metrics(
-            current_sensor_light, "sensor_light", metrics.sensor_light
-        )
-        self._clear_stale_metrics(
-            current_sensor_soil, "sensor_soil", metrics.sensor_soil
-        )
+        for key, gauge in SENSOR_GAUGES.items():
+            self._clear_stale_metrics(current[key], key, gauge)
 
         metrics.last_scrape_success.set(1)
         metrics.last_scrape_timestamp.set(start_time)
         logger.info(
             "Collection complete: %d controllers, %d devices",
-            len(current_controllers),
-            len(current_devices),
+            len(current["controller"]),
+            len(current["device"]),
         )
 
+    @staticmethod
     def _process_sensor(
-        self,
         sensor: dict[str, Any],
         controller_id: str,
-        current_temp: set[tuple],
-        current_humidity: set[tuple],
-        current_vpd: set[tuple],
-        current_co2: set[tuple],
-        current_light: set[tuple],
-        current_soil: set[tuple],
+        current: dict[str, set[tuple]],
     ) -> None:
         """Process a single sensor and update metrics."""
         sensor_type = sensor.get("sensorType")
         sensor_data = sensor.get("sensorData")
-        sensor_port = str(sensor.get("sensorPort", sensor.get("port", "0")))
-        precision = sensor.get("sensorPrecis", 0)
-        unit = sensor.get("sensorUnit", 1)  # 0=F, 1=C
+        sensor_port = str(sensor.get("accessPort", "0"))
+        precision = sensor.get("sensorPrecision", 1)
+        unit = sensor.get("sensorUnit")
 
         if sensor_type is None or sensor_data is None:
             return
 
-        sensor_type_name = SENSOR_TYPE_NAMES.get(sensor_type, f"type_{sensor_type}")
-        value = scale_value(sensor_data, precision)
+        value = scale_value(sensor_data, precision) * UNIT_MULTIPLIERS.get(
+            sensor_type, 1
+        )
+
+        if (
+            sensor_type in TEMPERATURE_SENSORS
+            or sensor_type in WATER_TEMPERATURE_SENSORS
+        ):
+            is_fahrenheit = (
+                unit == SENSOR_UNIT_FAHRENHEIT
+                if unit is not None
+                else sensor_type in FAHRENHEIT_SENSORS
+            )
+            if is_fahrenheit:
+                value = round(fahrenheit_to_celsius(value), max(precision - 1, 0))
 
         if sensor_type in TEMPERATURE_SENSORS:
-            # Convert Fahrenheit to Celsius if needed
-            if sensor_type in FAHRENHEIT_SENSORS or unit == 0:
-                value = fahrenheit_to_celsius(value)
-            labels = (controller_id, sensor_port, sensor_type_name)
-            current_temp.add(labels)
-            metrics.sensor_temperature.labels(*labels).set(value)
-
+            key, gauge = "sensor_temp", metrics.sensor_temperature
         elif sensor_type in HUMIDITY_SENSORS:
-            labels = (controller_id, sensor_port, sensor_type_name)
-            current_humidity.add(labels)
-            metrics.sensor_humidity.labels(*labels).set(value)
-
+            key, gauge = "sensor_humidity", metrics.sensor_humidity
         elif sensor_type in VPD_SENSORS:
-            labels = (controller_id, sensor_port, sensor_type_name)
-            current_vpd.add(labels)
-            metrics.sensor_vpd.labels(*labels).set(value)
+            key, gauge = "sensor_vpd", metrics.sensor_vpd
+        elif sensor_type in WATER_TEMPERATURE_SENSORS:
+            key, gauge = (
+                "sensor_hydro_water_temp",
+                metrics.sensor_hydro_water_temperature,
+            )
+        elif sensor_type in SIMPLE_SENSOR_GAUGES:
+            key, gauge = SIMPLE_SENSOR_GAUGES[sensor_type]
+        else:
+            logger.debug("Ignoring unknown sensor type %s", sensor_type)
+            return
 
-        elif sensor_type == SENSOR_TYPE_CO2:
+        labels: tuple[str, ...]
+        if key in ("sensor_temp", "sensor_humidity", "sensor_vpd"):
+            labels = (controller_id, sensor_port, SENSOR_TYPE_NAMES[sensor_type])
+        else:
             labels = (controller_id, sensor_port)
-            current_co2.add(labels)
-            metrics.sensor_co2.labels(*labels).set(value)
 
-        elif sensor_type == SENSOR_TYPE_LIGHT:
-            labels = (controller_id, sensor_port)
-            current_light.add(labels)
-            metrics.sensor_light.labels(*labels).set(value)
-
-        elif sensor_type == SENSOR_TYPE_SOIL:
-            labels = (controller_id, sensor_port)
-            current_soil.add(labels)
-            metrics.sensor_soil.labels(*labels).set(value)
+        current[key].add(labels)
+        gauge.labels(*labels).set(value)
