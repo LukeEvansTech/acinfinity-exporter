@@ -7,7 +7,7 @@ import requests
 
 logger = logging.getLogger(__name__)
 
-API_BASE = "http://www.acinfinityserver.com/api"
+API_BASE = "https://www.acinfinityserver.com/api"
 LOGIN_ENDPOINT = f"{API_BASE}/user/appUserLogin"
 DEVICES_ENDPOINT = f"{API_BASE}/user/devInfoListAll"
 
@@ -20,19 +20,24 @@ class ACInfinityClient:
         self.password = password
         self.token: str | None = None
         self.session = requests.Session()
-        self.session.headers.update({
-            "Content-Type": "application/x-www-form-urlencoded",
-        })
+        self.session.headers.update(
+            {
+                "Content-Type": "application/x-www-form-urlencoded",
+                # Match the Android app; the API behaves differently for other agents
+                "User-Agent": "okhttp/4.12.0",
+            }
+        )
 
     def authenticate(self) -> bool:
         """Authenticate with AC Infinity API and get token."""
         try:
             # Note: API has typo - appPasswordl with 'l'
+            # The API ignores characters past 25; the official app truncates too
             response = self.session.post(
                 LOGIN_ENDPOINT,
                 data={
                     "appEmail": self.email,
-                    "appPasswordl": self.password,
+                    "appPasswordl": self.password[:25],
                 },
                 timeout=30,
             )
@@ -40,7 +45,9 @@ class ACInfinityClient:
             data = response.json()
 
             if data.get("code") != 200:
-                logger.error("Authentication failed: %s", data.get("msg", "Unknown error"))
+                logger.error(
+                    "Authentication failed: %s", data.get("msg", "Unknown error")
+                )
                 return False
 
             self.token = data.get("data", {}).get("appId")
@@ -80,7 +87,9 @@ class ACInfinityClient:
             data = response.json()
 
             if data.get("code") != 200:
-                logger.error("Failed to get devices: %s", data.get("msg", "Unknown error"))
+                logger.error(
+                    "Failed to get devices: %s", data.get("msg", "Unknown error")
+                )
                 return []
 
             devices = data.get("data", [])
