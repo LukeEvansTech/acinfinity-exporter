@@ -6,45 +6,50 @@ The exporter exposes the following Prometheus metrics.
 
 Metrics related to AC Infinity controllers.
 
-| Metric | Type | Description | Labels |
-|--------|------|-------------|--------|
-| `acinfinity_controller_info` | Gauge | Controller information (always 1) | controller_id, controller_name |
+| Metric                                      | Type  | Description                       | Labels                         |
+| ------------------------------------------- | ----- | --------------------------------- | ------------------------------ |
+| `acinfinity_controller_info`                | Gauge | Controller information (always 1) | controller_id, controller_name |
 | `acinfinity_controller_temperature_celsius` | Gauge | Controller temperature in Celsius | controller_id, controller_name |
-| `acinfinity_controller_humidity_percent` | Gauge | Controller humidity percentage | controller_id, controller_name |
-| `acinfinity_controller_vpd_kpa` | Gauge | Controller VPD in kPa | controller_id, controller_name |
+| `acinfinity_controller_humidity_percent`    | Gauge | Controller humidity percentage    | controller_id, controller_name |
+| `acinfinity_controller_vpd_kpa`             | Gauge | Controller VPD in kPa             | controller_id, controller_name |
 
 ## Device Metrics
 
 Metrics related to individual devices (fans, etc.) connected to controllers.
 
-| Metric | Type | Description | Labels |
-|--------|------|-------------|--------|
-| `acinfinity_device_info` | Gauge | Device information (always 1) | controller_id, port, device_name |
-| `acinfinity_device_speed` | Gauge | Device speed (0-10) | controller_id, port, device_name |
-| `acinfinity_device_online` | Gauge | Device online status (1/0) | controller_id, port, device_name |
-| `acinfinity_device_state` | Gauge | Device state | controller_id, port, device_name |
+| Metric                     | Type  | Description                   | Labels                           |
+| -------------------------- | ----- | ----------------------------- | -------------------------------- |
+| `acinfinity_device_info`   | Gauge | Device information (always 1) | controller_id, port, device_name |
+| `acinfinity_device_speed`  | Gauge | Device speed (0-10)           | controller_id, port, device_name |
+| `acinfinity_device_online` | Gauge | Device online status (1/0)    | controller_id, port, device_name |
+| `acinfinity_device_state`  | Gauge | Device state                  | controller_id, port, device_name |
 
 ## Sensor Metrics
 
-Metrics from environmental sensors and probes.
+Metrics from the sensor ports on AI controllers (UIS 89 AI+ and the AI outlet range). Basic controllers do not report a sensors array, so these series are absent for them. Fahrenheit readings are converted to Celsius.
 
-| Metric | Type | Description | Labels |
-|--------|------|-------------|--------|
-| `acinfinity_sensor_temperature_celsius` | Gauge | Sensor temperature in Celsius | controller_id, port, sensor_type |
-| `acinfinity_sensor_humidity_percent` | Gauge | Sensor humidity percentage | controller_id, port, sensor_type |
-| `acinfinity_sensor_vpd_kpa` | Gauge | Sensor VPD in kPa | controller_id, port, sensor_type |
-| `acinfinity_sensor_co2_ppm` | Gauge | CO2 level in ppm | controller_id, port |
-| `acinfinity_sensor_light_percent` | Gauge | Light level percentage | controller_id, port |
-| `acinfinity_sensor_soil_percent` | Gauge | Soil moisture percentage | controller_id, port |
+| Metric                                              | Type  | Description                                                             | Labels                           |
+| --------------------------------------------------- | ----- | ----------------------------------------------------------------------- | -------------------------------- |
+| `acinfinity_sensor_temperature_celsius`             | Gauge | Sensor temperature in Celsius                                           | controller_id, port, sensor_type |
+| `acinfinity_sensor_humidity_percent`                | Gauge | Sensor humidity percentage                                              | controller_id, port, sensor_type |
+| `acinfinity_sensor_vpd_kpa`                         | Gauge | Sensor VPD in kPa                                                       | controller_id, port, sensor_type |
+| `acinfinity_sensor_co2_ppm`                         | Gauge | CO2 level in ppm                                                        | controller_id, port              |
+| `acinfinity_sensor_light_percent`                   | Gauge | Light level percentage                                                  | controller_id, port              |
+| `acinfinity_sensor_soil_percent`                    | Gauge | Soil moisture percentage                                                | controller_id, port              |
+| `acinfinity_sensor_hydro_ph`                        | Gauge | Hydro sensor pH                                                         | controller_id, port              |
+| `acinfinity_sensor_hydro_ec_microsiemens_per_cm`    | Gauge | Hydro sensor conductivity in µS/cm (mS/cm readings are converted)       | controller_id, port              |
+| `acinfinity_sensor_hydro_tds_ppm`                   | Gauge | Hydro sensor total dissolved solids in ppm (ppt readings are converted) | controller_id, port              |
+| `acinfinity_sensor_hydro_water_temperature_celsius` | Gauge | Hydro sensor water temperature in Celsius                               | controller_id, port              |
+| `acinfinity_sensor_water_detected`                  | Gauge | Water detect sensor (1=water present, 0=dry)                            | controller_id, port              |
 
 ## Exporter Metrics
 
 Metrics about the exporter itself.
 
-| Metric | Type | Description |
-|--------|------|-------------|
-| `acinfinity_last_scrape_success` | Gauge | Whether the last API scrape succeeded (1/0) |
-| `acinfinity_last_scrape_timestamp` | Gauge | Unix timestamp of last scrape |
+| Metric                             | Type  | Description                                 |
+| ---------------------------------- | ----- | ------------------------------------------- |
+| `acinfinity_last_scrape_success`   | Gauge | Whether the last API scrape succeeded (1/0) |
+| `acinfinity_last_scrape_timestamp` | Gauge | Unix timestamp of last scrape               |
 
 ## Labels
 
@@ -66,11 +71,11 @@ The user-assigned name for the device.
 
 ### sensor_type
 
-The type of sensor probe (e.g., internal, external).
+Which probe a temperature, humidity or VPD reading came from: `probe_*` for the plug-in probe, `ctrl_*` for the controller's onboard sensor.
 
 ## Example Output
 
-```
+```text
 # HELP acinfinity_controller_temperature_celsius Controller temperature in Celsius
 # TYPE acinfinity_controller_temperature_celsius gauge
 acinfinity_controller_temperature_celsius{controller_id="12345",controller_name="Tent Controller"} 24.5
