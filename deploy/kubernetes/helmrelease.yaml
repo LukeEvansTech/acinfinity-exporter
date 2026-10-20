@@ -18,7 +18,7 @@ spec:
           app:
             image:
               repository: ghcr.io/lukeevanstech/acinfinity-exporter
-              tag: 1.1.0  # Update this when you build the new image
+              tag: 1.1.4
             # Override entrypoint to run fan sync instead of exporter
             command:
               - python
